@@ -5,7 +5,7 @@ from rclpy.executors import ExternalShutdownException
 from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Twist, TwistStamped
 from builtin_interfaces.msg import Time
-from racecar_msgs.msg import CarState
+from diffdrive_msgs.msg import Pose2DStamped
 from .tracker_utils import (PDController, compareTime, timeDiff, timeToFloat, 
                             getRotationMatrix)
 
@@ -39,7 +39,7 @@ class TrajectoryTracker(Node):
         )
 
         self.create_subscription(
-            CarState, 
+            Pose2DStamped, 
             self.get_parameter("robot_name").value + "/state",
             self.state_callback, 
             qos_profile=1)
@@ -195,12 +195,12 @@ class TrajectoryTracker(Node):
 
         return success, res
     
-    def state_callback(self, msg:CarState):
+    def state_callback(self, msg:Pose2DStamped):
         cmd_vel_msg = Twist()
         car_state_time = msg.timestamp
-        car_state_x  = msg.x
-        car_state_y = msg.y
-        car_state_theta = msg.theta
+        car_state_x  = msg.pose.x
+        car_state_y = msg.pose.y
+        car_state_theta = msg.pose.theta
 
         rot_matrix = getRotationMatrix(car_state_theta)
         DEBUG = self.get_parameter("debug").value
@@ -212,10 +212,6 @@ class TrajectoryTracker(Node):
         if success:
             self.get_logger().info("Trajectory is being tracked")
         else:
-            # self.get_logger().warning(
-            #     "Trajectory is not generated."
-            #     )
-            # return
             pass
         
         if DEBUG:
