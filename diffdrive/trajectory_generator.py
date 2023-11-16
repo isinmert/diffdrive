@@ -3,8 +3,7 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from geometry_msgs.msg import Twist, Pose2D
-from racecar_msgs.msg import CarState
+from diffdrive_msgs.msg import Pose2DStamped
 from std_srvs.srv import Empty
 from builtin_interfaces.msg import Duration, Time
 
@@ -34,7 +33,7 @@ class trajGenNode(Node):
         self.timer = self.create_timer(timer_step, self.timer_callback)
 
         self.trajectory = JointTrajectory()
-        self.initial_state = CarState()
+        self.initial_state = Pose2DStamped()
         self.initial_state_set = False
         self.desired_state_set = False
         self.trajectory_set = False
@@ -45,11 +44,11 @@ class trajGenNode(Node):
             )
 
         self.robot_name = self.get_parameter("robot_name").value
-        self.create_subscription(Pose2D, 
+        self.create_subscription(Pose2DStamped, 
                                  self.robot_name+"/desired_pose", 
                                  self.des_pose_callback, 
                                  qos_profile=1)
-        self.create_subscription(CarState, 
+        self.create_subscription(Pose2DStamped, 
                                  self.robot_name+"/state", 
                                  self.state_callback, 
                                  qos_profile=1)
@@ -81,36 +80,33 @@ class trajGenNode(Node):
         
         return response
 
-    def state_callback(self, msg:CarState) -> None:
+    def state_callback(self, msg:Pose2DStamped) -> None:
         """
         Save the current robot state as the initial state
         """
         self.initial_state.timestamp = msg.timestamp
-        self.initial_state.x = msg.x
-        self.initial_state.y = msg.y
-        self.initial_state.theta = msg.theta
-        self.initial_state.xdot = msg.xdot
-        self.initial_state.ydot = msg.ydot
-        self.initial_state.thetadot = msg.thetadot
+        self.initial_state.pose.x = msg.pose.x
+        self.initial_state.pose.y = msg.pose.y
+        self.initial_state.pose.theta = msg.pose.theta
         if not self.initial_state_set:
             self.get_logger().info("Initial state is set.")
         self.initial_state_set = True
 
         self.p_0 = np.zeros(2)
         self.theta_0 = 0.
-        self.theta_0 = msg.theta
-        self.p_0[0] = msg.x
-        self.p_0[1] = msg.y
+        self.theta_0 = msg.pose.theta
+        self.p_0[0] = msg.pose.x
+        self.p_0[1] = msg.pose.y
         self.t_init_time = msg.timestamp
         self.t_init = self.t_init_time.sec + (self.t_init_time.nanosec/1e9)
         return
 
-    def des_pose_callback(self, msg:Pose2D) -> None:
+    def des_pose_callback(self, msg:Pose2DStamped) -> None:
         self.p_d = np.zeros(2)
         self.theta_d = 0.
-        self.p_d[0] = msg.x
-        self.p_d[1] = msg.y
-        self.theta_d = msg.theta
+        self.p_d[0] = msg.pose.x
+        self.p_d[1] = msg.pose.y
+        self.theta_d = msg.pose.theta
         self.desired_state_set = True
         self.get_logger().info("Desired pose is saved")
         return

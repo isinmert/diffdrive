@@ -5,7 +5,7 @@ from rclpy.executors import ExternalShutdownException
 from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Twist, TwistStamped
 from builtin_interfaces.msg import Time
-from racecar_msgs.msg import CarState
+from diffdrive_msgs.msg import Pose2DStamped
 from .tracker_utils import (PDController, compareTime, timeDiff, timeToFloat, 
                             getRotationMatrix)
 
@@ -42,7 +42,7 @@ class LyapunovTracker(Node):
         )
 
         self.create_subscription(
-            CarState, 
+            Pose2DStamped, 
             self.get_parameter("robot_name").value + "/state",
             self.state_callback, 
             qos_profile=1)
@@ -203,14 +203,14 @@ class LyapunovTracker(Node):
         success = True
         return success, terminal, res
     
-    def state_callback(self, msg:CarState):
+    def state_callback(self, msg:Pose2DStamped):
 
         # Extract position and orientation of the robot from the state message
         cmd_vel_msg = Twist()
         car_state_time = msg.timestamp
-        car_state_x  = msg.x
-        car_state_y = msg.y
-        car_state_theta = msg.theta
+        car_state_x  = msg.pose.x
+        car_state_y = msg.pose.y
+        car_state_theta = msg.pose.theta
 
         # extract the controller parameters
         k_x = self.get_parameter("k_x").value

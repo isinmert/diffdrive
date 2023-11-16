@@ -10,7 +10,7 @@ from webots_ros2_driver.webots_controller import WebotsController
 
 
 def generate_launch_description():
-    package_dir = get_package_share_directory('gmm_steer')
+    package_dir = get_package_share_directory('diffdrive')
 
     robot_description = os.path.join(package_dir, 'resource', 'pioneer.urdf')
 
@@ -33,7 +33,7 @@ def generate_launch_description():
 
     # Robot state publisher
     state_publisher = Node(
-        package="gmm_steer", 
+        package="diffdrive", 
         namespace="", 
         executable="robot_state_publisher",
         name="robot_state_publisher",
@@ -43,23 +43,8 @@ def generate_launch_description():
         ]
     )
 
-    # Trajectory Tracker
-    # trajectory_tracker = Node(
-    #     package="gmm_steer",
-    #     namespace="", 
-    #     executable="lyapunov_tracker", 
-    #     name="lyapunov_tracker", 
-    #     parameters=[
-    #         {"robot_name":"My3AT", 
-    #          "use_sim_time":True,
-    #          "debug":True, 
-    #          "k_x":0.02, 
-    #          "k_y":0.5, 
-    #          "k_theta":0.1}
-    #     ]
-    # )
     trajectory_tracker = Node(
-        package="gmm_steer", 
+        package="diffdrive", 
         name="trajectory_tracker", 
         namespace="",
         executable="trajectory_tracker", 
@@ -72,7 +57,7 @@ def generate_launch_description():
 
     # Trajectory Generator
     trajectory_generator = Node(
-        package="gmm_steer", 
+        package="diffdrive", 
         namespace="", 
         executable="trajectory_generator", 
         name="trajectory_generator", 

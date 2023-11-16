@@ -8,9 +8,9 @@
   <license>MIT</license>
 
   <depend>rclpy</depend>
-  <depend>racecar_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>webots_ros2_driver</depend>
+  <depend>diffdrive_msgs</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
