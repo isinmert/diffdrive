@@ -1,0 +1,41 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/SandyGround.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.2676515293364005 -0.2541852452928439 0.9293828704679803 4.587865641132992
+  position 1.2273414093330877 25.68295591092229 16.167530756752488
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+Solid {
+  children [
+    DEF SandyPlane Shape {
+      appearance SandyGround {
+      }
+      geometry Plane {
+        size 50 50
+      }
+    }
+  ]
+  boundingObject USE SandyPlane
+}
+Pioneer3at {
+  translation 0.0 0.0 0.0
+  rotation 0.0 1.0 0.0 0.0
+  name "My3AT"
+  controller "<extern>"
+  extensionSlot [
+    Compass {
+    }
+    GPS {
+    }
+  ]
+}

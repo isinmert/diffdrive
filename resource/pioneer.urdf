@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<robot name="pioneer">
+    <webots>
+        <device reference="gps" type="GPS">
+            <!-- If `False`, disable the device. By default the device will be enabled. -->
+            <enabled>True</enabled>
+            <!-- Set the main topic name of the device. By default it will be `/robotName/referenceName`. -->
+            <!-- If a device publishes several topics, the secondary topics names are relative to the main topic name. -->
+            <!-- Example: if the main topic name is `my_robot/camera`, the secondary topic for the `camera_info` messages -->
+            <!-- will be `my_robot/camera/camera_info`. -->
+            <topicName>/gps</topicName>
+            <!-- Set the update rate in Hz of the topic. By default the topic will be published at each simulation step. -->
+            <!-- <updateRate>40</updateRate> -->
+            <!-- If `True`, the device topics will constantly publish, which can slow down the simulation. -->
+            <!-- By default the topics are publishing only if there is at least one subscriber for the corresponding topic. -->
+            <alwaysOn>False</alwaysOn>
+        </device>
+        <device reference="compass" type="Compass">
+            <enabled>True</enabled>
+            <topicName>/compass</topicName>
+            <!-- <updateRate>40</updateRate> -->
+            <alwaysOn>False</alwaysOn>
+        </device>
+        <plugin type="gmm_steer.pioneer_driver.PioneerDriver" />
+    </webots>
+</robot>
