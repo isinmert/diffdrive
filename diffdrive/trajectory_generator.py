@@ -88,8 +88,6 @@ class trajGenNode(Node):
         self.initial_state.pose.x = msg.pose.x
         self.initial_state.pose.y = msg.pose.y
         self.initial_state.pose.theta = msg.pose.theta
-        if not self.initial_state_set:
-            self.get_logger().info("Initial state is set.")
         self.initial_state_set = True
 
         self.p_0 = np.zeros(2)
@@ -191,7 +189,7 @@ class trajGenNode(Node):
             self.get_logger().info("Problem is solved")
         if self.trajectory_set:
             self.traj_publisher.publish(self.trajectory)
-            self.get_logger().info("Trajectory is published")
+            self.get_logger().info("Trajectory is published", once=True)
             self.initial_state_set = False
             self.desired_state_set = False
 

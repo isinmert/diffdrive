@@ -96,6 +96,7 @@ class TrajectoryTracker(Node):
         res = [0.0 for _ in range(6)]
         success = False
         DEBUG = self.get_parameter("debug").value
+        DEBUG_SEC = 0.5
         if DEBUG:
             logger = self.get_logger()
 
@@ -116,10 +117,14 @@ class TrajectoryTracker(Node):
             return success, res
         
         if DEBUG:
-            logger.info("t0_traj_sec : {}".format(t0_traj.sec))
-            logger.info("t0_traj_nano : {}".format(t0_traj.nanosec))
-            logger.info("t_sec : {}".format(t.sec))
-            logger.info("t_nano : {}".format(t.nanosec))
+            logger.info("t0_traj_sec : {}".format(t0_traj.sec), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t0_traj_nano : {}".format(t0_traj.nanosec),
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_sec : {}".format(t.sec), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_nano : {}".format(t.nanosec), 
+                        throttle_duration_sec=DEBUG_SEC)
 
         t_traj_final = traj_points[-1].time_from_start
         t_greater_t0 = compareTime(t, t0_traj)
@@ -173,23 +178,40 @@ class TrajectoryTracker(Node):
         ay_cur = ayk + dt * j_y
 
         if DEBUG:
-            logger.info("k : {}".format(k))
-            logger.info("t_l_sec : {}".format(t_l.sec))
-            logger.info("t_l_nano : {}".format(t_l.nanosec))
-            logger.info("t_r_sec : {}".format(t_r.sec))
-            logger.info("t_r_nano : {}".format(t_r.nanosec))
-            logger.info("t_rel_sec : {}".format(t_rel.sec))
-            logger.info("t_rel_nano : {}".format(t_rel.nanosec))
-            logger.info("px_cur : {}".format(px_cur))
-            logger.info("py_cur : {}".format(py_cur))
-            logger.info("pxk : {}".format(pxk))
-            logger.info("pyk : {}".format(pyk))
-            logger.info("vxk : {}".format(vxk))
-            logger.info("vyk : {}".format(vyk))
-            logger.info("axk : {}".format(axk))
-            logger.info("ayk : {}".format(ayk))
-            logger.info("j_x : {}".format(j_x))
-            logger.info("j_y : {}".format(j_y))
+            logger.info("k : {}".format(k),
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_l_sec : {}".format(t_l.sec),
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_l_nano : {}".format(t_l.nanosec),
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_r_sec : {}".format(t_r.sec),
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_r_nano : {}".format(t_r.nanosec),
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_rel_sec : {}".format(t_rel.sec), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("t_rel_nano : {}".format(t_rel.nanosec), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("px_cur : {}".format(px_cur), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("py_cur : {}".format(py_cur), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("pxk : {}".format(pxk), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("pyk : {}".format(pyk), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("vxk : {}".format(vxk), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("vyk : {}".format(vyk), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("axk : {}".format(axk), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("ayk : {}".format(ayk), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("j_x : {}".format(j_x), 
+                        throttle_duration_sec=DEBUG_SEC)
+            logger.info("j_y : {}".format(j_y), 
+                        throttle_duration_sec=DEBUG_SEC)
 
         res = [px_cur, py_cur, vx_cur, vy_cur, ax_cur, ay_cur]
 
@@ -204,32 +226,45 @@ class TrajectoryTracker(Node):
 
         rot_matrix = getRotationMatrix(car_state_theta)
         DEBUG = self.get_parameter("debug").value
+        DEBUG_SEC = 0.5
 
         # Get Pos, vel and acceleration values from trajectory 
         success, state_at_t = self._get_state_from_traj(car_state_time, 
                                                         self.trajectory)
         
         if success:
-            self.get_logger().info("Trajectory is being tracked")
+            self.get_logger().info("Trajectory is being tracked",
+                                   throttle_duration_sec=DEBUG_SEC)
         else:
-            pass
+            return
         
         if DEBUG:
-            self.get_logger().info("theta : {}".format(car_state_theta))
-            self.get_logger().info("rotation_matrix: {}".format(rot_matrix))
-            self.get_logger().info("inv_rot_mat: {}".format(np.linalg.inv(rot_matrix)))
+            self.get_logger().info("theta : {}".format(car_state_theta), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("rotation_matrix: {}".format(rot_matrix), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info(
+                "inv_rot_mat: {}".format(np.linalg.inv(rot_matrix)), 
+                throttle_duration_sec=DEBUG_SEC)
 
         # Compute error values
         err_x = state_at_t[0] - car_state_x
         err_y = state_at_t[1] - car_state_y
 
         if DEBUG:
-            self.get_logger().info("traj_x : {}".format(state_at_t[0]))
-            self.get_logger().info("traj_y : {}".format(state_at_t[1]))
-            self.get_logger().info("car_state_x : {}".format(car_state_x))
-            self.get_logger().info("car_state_y : {}".format(car_state_y))
-            self.get_logger().info("err_x : {}".format(err_x))
-            self.get_logger().info("err_y : {}".format(err_y))
+            self.get_logger().info("traj_x : {}".format(state_at_t[0]), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("traj_y : {}".format(state_at_t[1]), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("car_state_x : {}".format(car_state_x), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("car_state_y : {}".format(car_state_y), 
+                                   throttle_duration_sec=DEBUG_SEC)
+        
+        self.get_logger().info("err_x : {}".format(err_x), 
+                                throttle_duration_sec=DEBUG_SEC)
+        self.get_logger().info("err_y : {}".format(err_y), 
+                                throttle_duration_sec=DEBUG_SEC)
 
         # Compute u_x and u_y 
         PD_x_output = self.PD_x.getOutput(err_x, car_state_time)
@@ -238,12 +273,18 @@ class TrajectoryTracker(Node):
         u_y = state_at_t[5] + PD_y_output
 
         if DEBUG:
-            self.get_logger().info("pd_x_output : {}".format(PD_x_output))
-            self.get_logger().info("pd_y_output : {}".format(PD_y_output))
-            self.get_logger().info("ax : {}".format(state_at_t[4]))
-            self.get_logger().info("ay : {}".format(state_at_t[5]))
-            self.get_logger().info("u_x : {}".format(u_x))
-            self.get_logger().info("u_y : {}".format(u_y))
+            self.get_logger().info("pd_x_output : {}".format(PD_x_output), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("pd_y_output : {}".format(PD_y_output), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("ax : {}".format(state_at_t[4]),
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("ay : {}".format(state_at_t[5]),
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("u_x : {}".format(u_x),
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("u_y : {}".format(u_y),
+                                   throttle_duration_sec=DEBUG_SEC)
 
 
         # Compute vdot and vw values 
@@ -251,8 +292,10 @@ class TrajectoryTracker(Node):
         vdot = dummy[0]
         v_times_w = dummy[1]
         if DEBUG:
-            self.get_logger().info("vdot : {}".format(vdot))
-            self.get_logger().info("v_times_w : {}".format(v_times_w))
+            self.get_logger().info("vdot : {}".format(vdot), 
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("v_times_w : {}".format(v_times_w), 
+                                   throttle_duration_sec=DEBUG_SEC)
 
         # Compute vk and wk 
         EPS = 1e-3
@@ -271,10 +314,14 @@ class TrajectoryTracker(Node):
             wk = 0.0
 
         if DEBUG:
-            self.get_logger().info("dt : {}".format(dt))
-            self.get_logger().info("vkm1 : {}".format(vkm1))
-            self.get_logger().info("vk : {}".format(vk))
-            self.get_logger().info("wk : {}".format(wk))
+            self.get_logger().info("dt : {}".format(dt),
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("vkm1 : {}".format(vkm1),
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("vk : {}".format(vk),
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.get_logger().info("wk : {}".format(wk),
+                                   throttle_duration_sec=DEBUG_SEC)
         
         # write cmd_vel message 
         cmd_vel_msg.linear.x = vk
