@@ -2,7 +2,8 @@ import os
 import launch
 from launch_ros.actions import Node
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess
+from launch.actions import ExecuteProcess, DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from ament_index_python.packages import get_package_share_directory
 from webots_ros2_driver.webots_launcher import WebotsLauncher, Ros2SupervisorLauncher
 from webots_ros2_driver.webots_controller import WebotsController
@@ -13,6 +14,10 @@ def generate_launch_description():
     package_dir = get_package_share_directory('diffdrive')
 
     robot_description = os.path.join(package_dir, 'resource', 'pioneer.urdf')
+
+    debug = LaunchConfiguration('debug')
+
+    debug_launch_argument = DeclareLaunchArgument('debug', default_value='False')
 
     webots_node = WebotsLauncher(
         world=os.path.join(package_dir, 'worlds', 'new_world.wbt'), 
@@ -51,7 +56,7 @@ def generate_launch_description():
         parameters=[
             {"robot_name":"My3AT", 
              "use_sim_time":True, 
-             "debug":True}
+             "debug":debug}
         ]
     )
 
@@ -76,6 +81,7 @@ def generate_launch_description():
         )
 
     return LaunchDescription([
+        debug_launch_argument, 
         webots_node,
         ros2_supervisor,
         robot_driver,
