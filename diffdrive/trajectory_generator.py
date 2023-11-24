@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from diffdrive_msgs.msg import Pose2DStamped
+from diffdrive_msgs.msg import Pose2DStamped, Pose2DTrajectory
 from std_srvs.srv import Empty
 from builtin_interfaces.msg import Duration, Time
 
@@ -32,7 +32,7 @@ class trajGenNode(Node):
         timer_step = 0.1 # in seconds
         self.timer = self.create_timer(timer_step, self.timer_callback)
 
-        self.trajectory = JointTrajectory()
+        self.trajectory = Pose2DTrajectory()
         self.initial_state = Pose2DStamped()
         self.initial_state_set = False
         self.desired_state_set = False
@@ -53,7 +53,7 @@ class trajGenNode(Node):
                                  self.state_callback, 
                                  qos_profile=1)
         self.traj_publisher = self.create_publisher(
-            JointTrajectory, 
+            Pose2DTrajectory, 
             self.robot_name+"/trajectory", qos_profile=1
             )
 
@@ -137,19 +137,16 @@ class trajGenNode(Node):
                     self.trajectory.header.frame_id = ("trajectory" 
                                                     + str(self.counter))
                     self.trajectory.header.stamp = self.t_init_time
-                    self.trajectory.points.clear()
-                    self.trajectory.joint_names.clear()
-                    self.trajectory.joint_names.append("x")
-                    self.trajectory.joint_names.append("y")
+                    self.trajectory.poses.clear()
 
                     N = self.get_parameter("N").value
                     dt = self.get_parameter("dt").value
                     for k in range(N+1):
-                        jtpt = JointTrajectoryPoint()
-                        time_from_start = Duration()
+                        pose_stamped = Pose2DStamped()
+                        time_from_start = Time()
                         time_from_start.sec = int(k*dt)
                         time_from_start.nanosec = int((k*dt - int(k*dt))*1.0e9)
-                        jtpt.time_from_start = time_from_start
+                        pose_stamped.timestamp = time_from_start
                         pxk = px[k]
                         pyk = py[k]
                         vxk = vx[k]
@@ -157,13 +154,9 @@ class trajGenNode(Node):
                         axk = ax[k]
                         ayk = ay[k]
 
-                        jtpt.positions.append(pxk)
-                        jtpt.positions.append(pyk)
-                        jtpt.velocities.append(vxk)
-                        jtpt.velocities.append(vyk)
-                        jtpt.accelerations.append(axk)
-                        jtpt.accelerations.append(ayk)
-                        self.trajectory.points.append(jtpt)
+                        pose_stamped.pose.x = pxk
+                        pose_stamped.pose.y = pyk
+                        self.trajectory.poses.append(pose_stamped)
 
 
                     self.trajectory_set = True
@@ -189,7 +182,11 @@ class trajGenNode(Node):
             self.get_logger().info("Problem is solved")
         if self.trajectory_set:
             self.traj_publisher.publish(self.trajectory)
-            self.get_logger().info("Trajectory is published", once=True)
+            # self.get_logger().info(
+            #     "Trajectory {} is published".format(
+            #         self.trajectory.header.frame_id), 
+            #         throttle_duration_sec=1.0)
+            self.get_logger().info("trajectory is published!!")
             self.initial_state_set = False
             self.desired_state_set = False
 
