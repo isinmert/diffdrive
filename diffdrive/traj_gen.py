@@ -96,7 +96,7 @@ class trajectoryGenerator(object):
             constr.append(cp.norm(vk, 2) <= MAX_SPEED)
         
         a0 = self.ak_list[0]
-        aNm1 = self.ak_list[-2]
+        aN = self.ak_list[-1]
         p0 = self.pk_list[0]
         pN = self.pk_list[-1]
         v0 = self.vk_list[0]
@@ -112,9 +112,9 @@ class trajectoryGenerator(object):
         cN = cp.Variable(nonneg=True)
         # constr.append(a0 == c0 * alpha0)
         # constr.append(self.ak_list[-1] == aNm1)
-        # constr.append(aNm1 == - cN * alphad)
+        # constr.append(vNm1 == - cN * alphad)
         # constr.append(c0 >= EPS_C)
-        # constr.append(cN >= 10.0*EPS_C)
+        # constr.append(cN >= EPS_C)
 
         # Initial and desired position constraints
         constr.append(p0 == self.p0)
@@ -122,6 +122,7 @@ class trajectoryGenerator(object):
         # Initial and desired speed constraints
         constr.append(v0 == np.zeros(v0.shape))
         constr.append(vN == np.zeros(vN.shape))
+        constr.append(aN == 0.)
         
         # Objective definition
         obj = cp.Minimize(obj_func)

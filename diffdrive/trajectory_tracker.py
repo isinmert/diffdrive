@@ -2,10 +2,9 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 
-from trajectory_msgs.msg import JointTrajectory
 from geometry_msgs.msg import Twist, TwistStamped
 from builtin_interfaces.msg import Time
-from diffdrive_msgs.msg import Pose2DStamped
+from diffdrive_msgs.msg import Pose2DStamped, Pose2DTrajectory
 from .tracker_utils import (PDController, compareTime, timeDiff, timeToFloat, 
                             getRotationMatrix)
 
@@ -13,6 +12,7 @@ from .tracker_utils import (PDController, compareTime, timeDiff, timeToFloat,
 from typing import Tuple, List
 
 import numpy as np
+from scipy.interpolate import CubicSpline
 
 class TrajectoryTracker(Node):
     """
@@ -27,7 +27,7 @@ class TrajectoryTracker(Node):
         self.declare_parameter("check_step", 1)
         self.declare_parameter("debug", True)
 
-        self.create_subscription(JointTrajectory,
+        self.create_subscription(Pose2DTrajectory,
             self.get_parameter("robot_name").value+"/trajectory", 
             self.trajectory_callback, 
             qos_profile=1)
@@ -44,7 +44,11 @@ class TrajectoryTracker(Node):
             self.state_callback, 
             qos_profile=1)
         
-        self.trajectory = JointTrajectory()
+        self.trajectory = Pose2DTrajectory()
+        # Initialize splines to store the trajectory
+        self.spline_x = None
+        self.spline_y = None
+        self.spline_theta = None
         self.trajectory_set = False
 
         # Initialize pd controllers
@@ -63,14 +67,35 @@ class TrajectoryTracker(Node):
 
         pass
 
-    def trajectory_callback(self, trj_msg:JointTrajectory)->None:
+    def trajectory_callback(self, trj_msg:Pose2DTrajectory)->None:
         """
         Save observed trajectory if it's frame_id is different than the
         saved trajectory.
         """
         if trj_msg.header.frame_id != self.trajectory.header.frame_id:
             self.trajectory = trj_msg
-        self.trajectory_set = True
+            # Update or generate trajectory splines
+            t0 = trj_msg.header.stamp
+            t0_float = timeToFloat(t0)
+            t_list = []
+            x_list = []
+            y_list = []
+            theta_list = []
+            
+            for stamped_pose in trj_msg.poses:
+                t = stamped_pose.timestamp
+                t_list.append(t0_float + timeToFloat(t))
+                x_list.append(stamped_pose.pose.x)
+                y_list.append(stamped_pose.pose.y)
+                theta_list.append(stamped_pose.pose.theta)
+            
+            self.spline_x = CubicSpline(t_list, x_list)
+            self.spline_y = CubicSpline(t_list, y_list)
+            self.spline_theta = CubicSpline(t_list, theta_list)
+        
+            self.trajectory_set = True
+        else:
+            pass
         return
     
     def timer_callback(self) -> None:
@@ -86,7 +111,62 @@ class TrajectoryTracker(Node):
 
         return
     
-    def _get_state_from_traj(self, t:Time, traj:JointTrajectory) \
+    def _get_state_from_traj(self, t:Time) -> Tuple[bool, List[float]]:
+        """
+        Get position, speed and acceleration values at a timestamp from 
+        the saved trajectory.
+        """
+        res = [0.0 for _ in range(6)]
+        success = False
+        DEBUG = self.get_parameter("debug").value
+        if DEBUG:
+            logger = self.get_logger()
+        
+        if self.trajectory_set:
+            pass
+        else:
+            return success, res
+        
+        t_float = timeToFloat(t)
+
+        # check whether t_float is between 
+        t0_traj, tf_traj = self.spline_x.x[0], self.spline_x.x[-1]
+        t_between = t0_traj <= t_float <= tf_traj
+        if t_between:
+            success = True
+            if DEBUG: 
+                logger.info(
+                    "t:{} is between t0:{} and tf:{}"
+                        .format(t_float, t0_traj, tf_traj)
+                    )
+        elif t0_traj > t_float:
+            success = True
+            if DEBUG:
+                logger.info(
+                    "t:{} is lower than t0:{}".format(t_float, t0_traj)
+                )
+            t_float = t0_traj
+        else:
+            success = True
+            if DEBUG:
+                logger.info(
+                    "t:{} is greater than tf:{}".format(t_float, tf_traj)
+                )
+            t_float = tf_traj
+
+        res[0] = self.spline_x(t_float)
+        res[1] = self.spline_y(t_float)
+        # if t_float is not valid take the velocities and accelerations as 0
+        if t_between:
+            res[2] = self.spline_x.derivative(1)(t_float)
+            res[3] = self.spline_y.derivative(1)(t_float)
+            res[4] = self.spline_x.derivative(2)(t_float)
+            res[5] = self.spline_y.derivative(2)(t_float)
+
+        return success, res
+    
+    
+    def _get_state_from_traj_old(self, t:Time, traj:Pose2DTrajectory) \
         -> Tuple[bool, List[float]]:
         """
         Get state and acceleration values at a timestep from a given 
@@ -103,11 +183,9 @@ class TrajectoryTracker(Node):
         if self.trajectory_set:
             pass
         else:
-            # self.get_logger().info("Trajectory is not set")
-            pass
             return success, res
 
-        traj_points = traj.points
+        traj_points = traj.poses
         t0_traj = traj.header.stamp
         if len(traj_points) == 0:
             self.get_logger().warning("Trajectory is empty!!")
@@ -126,7 +204,7 @@ class TrajectoryTracker(Node):
             logger.info("t_nano : {}".format(t.nanosec), 
                         throttle_duration_sec=DEBUG_SEC)
 
-        t_traj_final = traj_points[-1].time_from_start
+        t_traj_final = traj_points[-1].timestamp
         t_greater_t0 = compareTime(t, t0_traj)
         if t_greater_t0:
             t_rel = timeDiff(t, t0_traj)
@@ -139,8 +217,8 @@ class TrajectoryTracker(Node):
             t_rel = t_traj_final
 
         for k in range(len(traj_points)-1):
-            t_l = traj_points[k].time_from_start
-            t_r = traj_points[k+1].time_from_start
+            t_l = traj_points[k].timestamp
+            t_r = traj_points[k+1].timestamp
             if compareTime(t_rel, t_l) and compareTime(t_r, t_rel):
                 break
         
@@ -229,8 +307,7 @@ class TrajectoryTracker(Node):
         DEBUG_SEC = 0.5
 
         # Get Pos, vel and acceleration values from trajectory 
-        success, state_at_t = self._get_state_from_traj(car_state_time, 
-                                                        self.trajectory)
+        success, state_at_t = self._get_state_from_traj(car_state_time)
         
         if success:
             self.get_logger().info("Trajectory is being tracked",
@@ -250,6 +327,21 @@ class TrajectoryTracker(Node):
         # Compute error values
         err_x = state_at_t[0] - car_state_x
         err_y = state_at_t[1] - car_state_y
+
+        # check whether the goal is reached
+        if (timeToFloat(car_state_time) > self.spline_x.x[-1] 
+            and abs(err_x) <= 1.0e-3
+            and abs(err_y) <= 1.0e-3):
+            self.cmd_vel_publisher.publish(cmd_vel_msg)
+            self.prev_cmd_vel.twist = cmd_vel_msg
+            self.prev_cmd_vel.header.stamp = self.clock.now().to_msg()
+            self.get_logger().info("Trajectory is successfully followed!",
+                                   throttle_duration_sec=DEBUG_SEC)
+            self.trajectory_set = False
+            self.trajectory = Pose2DTrajectory()
+            self.spline_x = None
+            self.spline_y = None
+            self.spline_theta = None
 
         if DEBUG:
             self.get_logger().info("traj_x : {}".format(state_at_t[0]), 
