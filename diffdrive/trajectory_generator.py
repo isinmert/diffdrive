@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 
 from diffdrive_msgs.msg import Pose2DStamped, Pose2DTrajectory
-from diffdrive_msgs.srv import Pose2DSrv
+from diffdrive_msgs.srv import Pose2DSrv, Pose2DTrajSrv
 from geometry_msgs.msg import Pose2D
 from std_srvs.srv import Empty
 from std_msgs.msg import Bool
@@ -31,7 +31,7 @@ class trajGenNode(Node):
         self.t_init_time = Time()
 
         self.counter = 0
-        timer_step = 0.1 # in seconds
+        timer_step = 0.05 # in seconds
         self.timer = self.create_timer(timer_step, self.timer_callback)
 
         self.trajectory = Pose2DTrajectory()
@@ -46,17 +46,19 @@ class trajGenNode(Node):
             )
 
         self.robot_name = self.get_parameter("robot_name").value
-        # self.create_subscription(Pose2DStamped, 
-        #                          self.robot_name+"/desired_pose", 
-        #                          self.des_pose_callback, 
-        #                          qos_profile=1)
+        
         self.create_subscription(Pose2DStamped, 
                                  self.robot_name+"/state", 
                                  self.state_callback, 
                                  qos_profile=1)
-        self.traj_publisher = self.create_publisher(
-            Pose2DTrajectory, 
-            self.robot_name+"/trajectory", qos_profile=1
+        # self.traj_publisher = self.create_publisher(
+        #     Pose2DTrajectory, 
+        #     self.robot_name+"/trajectory", qos_profile=1
+        #     )
+        
+        self.traj_pub_cli = self.create_client(
+            Pose2DTrajSrv,
+            self.robot_name+'/trajectory'
             )
 
         self.clear_traj_srv = self.create_service(
@@ -191,14 +193,18 @@ class trajGenNode(Node):
             self.solveProb()
             self.get_logger().info("Problem is solved")
         if self.trajectory_set:
-            self.traj_publisher.publish(self.trajectory)
-            # self.get_logger().info(
-            #     "Trajectory {} is published".format(
-            #         self.trajectory.header.frame_id), 
-            #         throttle_duration_sec=1.0)
-            self.get_logger().info("trajectory is published!!")
+            # self.traj_publisher.publish(self.trajectory)
+            # Now publish trajectory
+            traj_req = Pose2DTrajSrv.Request()
+            traj_req.trajectory = self.trajectory
+            self.traj_pub_cli.call_async(traj_req)
+            self.get_logger().info(
+                "Trajectory {} is published".format(
+                    self.trajectory.header.frame_id), 
+                    throttle_duration_sec=1.0)
             self.initial_state_set = False
             self.desired_state_set = False
+            self.trajectory_set = False
 
         return
 
