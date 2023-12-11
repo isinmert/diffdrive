@@ -3,13 +3,14 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 
 from diffdrive_msgs.msg import Pose2DStamped, Pose2DTrajectory
-from diffdrive_msgs.srv import Pose2DSrv, Pose2DTrajSrv
+from diffdrive_msgs.srv import Pose2DSrv, Pose2DTrajSrv, CircTraj
 from geometry_msgs.msg import Pose2D
 from std_srvs.srv import Empty
 from std_msgs.msg import Bool
 from builtin_interfaces.msg import Time
 
 from .traj_gen import trajectoryGenerator
+from tracker_utils import getRotationMatrix
 
 import numpy as np
 
@@ -51,10 +52,6 @@ class trajGenNode(Node):
                                  self.robot_name+"/state", 
                                  self.state_callback, 
                                  qos_profile=1)
-        # self.traj_publisher = self.create_publisher(
-        #     Pose2DTrajectory, 
-        #     self.robot_name+"/trajectory", qos_profile=1
-        #     )
         
         self.traj_pub_cli = self.create_client(
             Pose2DTrajSrv,
@@ -72,12 +69,19 @@ class trajGenNode(Node):
             self.robot_name+"/desired_pose",
             self.des_pose_callback
         )
+
+        self.circ_traj_srv = self.create_service(
+            CircTraj, 
+            self.robot_name+"/get_circ_traj", 
+            self.circ_traj_callback
+        )
         
         self.clock = self.get_clock()
         
     pass
 
-    def clear_traj_callback(self, request, response):
+    def clear_traj_callback(self, request:Empty.Request, 
+                            response:Empty.Response):
         """
         Once clear traj service is requested clear the trajectory and 
         unset initial and desired states
@@ -117,6 +121,52 @@ class trajGenNode(Node):
         self.theta_d = request.pose.theta
         self.desired_state_set = True
         self.get_logger().info("Desired pose is saved")
+        response.success = Bool()
+        response.success.data = True
+        return response
+    
+    def circ_traj_callback(self, request:CircTraj.Request, 
+                           response:CircTraj.Response):
+        """
+        Generate a circular trajectory and call trajectory service.
+        """
+        if not self.initial_state_set:
+            response.success = Bool()
+            response.success.data = False
+            self.get_logger().warning("Initial state is not set!")
+            return response
+        
+        x0 = self.initial_state.pose.x
+        y0 = self.initial_state.pose.y
+        theta_0 = self.initial_state.pose.theta
+
+        angle_req = request.angle
+        rad_req = request.radius
+        CW = request.cw
+
+        trajectory = Pose2DTrajectory()
+        trajectory.header.stamp = self.clock.now().to_msg()
+        
+        s_max = angle_req * rad_req
+        v_max = self.get_parameter('max_speed').value
+        dt = self.get_parameter('dt').value
+        if v_max*dt > s_max:
+            v_max = s_max/dt
+        
+        t_mid = (s_max-(dt*v_max)) / v_max
+        total_traj_time = 2*dt + t_mid
+        rot_matrix = getRotationMatrix(theta_0)
+        t_arr = np.linspace(0, total_traj_time)
+        
+        # TODO: complete this part
+        # First genarate theta array
+        # check if the trajectory direction (CW or CCW)
+        # depending on direction complete trajectory and fill the trajectory 
+        # and call trajectory service to publish 
+
+        raise NotImplementedError
+
+
         response.success = Bool()
         response.success.data = True
         return response

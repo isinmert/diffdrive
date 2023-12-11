@@ -266,9 +266,6 @@ class TrajectoryTracker(Node):
 
         # Get Pos, vel and acceleration values from trajectory 
         success, state_at_t = self._get_state_from_traj(car_state_time)
-
-        # self.get_logger().info("success value : {}".format(success))
-        # self.get_logger().info("trajectory set : {}".format(self.trajectory_set))
         
         if success == True:
             self.get_logger().info("Trajectory is being tracked",
