@@ -34,7 +34,10 @@ class PDController(object):
             t_diff_sec = e_new_time.sec - self.e_prev_time.sec
             t_diff_nanosec = e_new_time.nanosec - self.e_prev_time.nanosec
             t_diff = t_diff_sec + t_diff_nanosec/1.0e9
-            edot = e_diff/t_diff
+            if abs(t_diff) <= 1.0e-9:
+                edot = 0.
+            else:
+                edot = e_diff/t_diff
             res += self.kd * edot
         self.update(e_new, e_new_time)
         return res
@@ -79,7 +82,16 @@ def timeToFloat(t:Union[Time, Duration]) -> float:
     nanosec = t.nanosec
     res = sec + nanosec/1.0e9
     return res
-    
+
+def FloatToTime(t:float) -> Time:
+    """
+    Convert a float into time.
+    """
+    res = Time()
+    res.sec = int(np.floor(t))
+    res.nanosec = int(1.0e9 * (t-res.sec))
+    return res
+
 def getRotationMatrix(theta:float) -> np.ndarray:
     """
     Get rotation matrix from angle theta. 

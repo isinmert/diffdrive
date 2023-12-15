@@ -1,9 +1,62 @@
 import numpy as np
 import cvxpy as cp
 
-# from matplotlib import pyplot as plt
+from .tracker_utils import getRotationMatrix
 
 from typing import Union
+
+def generateCircTraj(x0:float, y0:float, theta0:float, 
+                     radius:float, angle:float, CW:bool, 
+                     max_speed:float, dt:float) -> np.ndarray:
+    """
+    generate circular trajectory
+    """
+    res = np.zeros((4, 100))
+
+    s_max = angle * radius
+    v_max = max_speed
+    if v_max*dt > s_max:
+        v_max = s_max/dt
+    dtheta_max = v_max / radius
+
+    t_mid = (s_max-(dt*v_max)) / v_max
+    total_traj_time = 2*dt + t_mid
+    rot_matrix = getRotationMatrix(theta0)
+    t_arr = np.linspace(0, total_traj_time, 100)
+
+    res[0, :] = t_arr
+
+    theta_arr = np.zeros(t_arr.shape)
+    for k in range(theta_arr.size):
+        if t_arr[k] < dt:
+            theta_arr[k] = dtheta_max/dt * 0.5 * t_arr[k]**2
+        elif t_arr[k] >= dt and t_arr[k] < dt + t_mid:
+            theta_arr[k] = dt * dtheta_max * 0.5 + (t_arr[k]-dt)*dtheta_max
+        else:
+            theta_arr[k] = dt * dtheta_max * 0.5 + t_mid*dtheta_max
+            t_dummy = t_arr[k] - (t_mid + dt)
+            theta_arr[k] += (dtheta_max + dtheta_max - (dtheta_max/dt)*t_dummy) * 0.5 * t_dummy
+
+    for k in range(theta_arr.size):
+
+        xk = np.sin(theta_arr[k])
+        if not CW:
+            yk = radius * (1.0 - np.cos(theta_arr[k]))
+            thetak = theta_arr[k]
+        else:
+            yk = -1.0 * radius * (1.0 - np.cos(theta_arr[k]))
+            thetak = -1.0 * theta_arr[k]
+
+        pose_vec = rot_matrix @ np.array([xk, yk])
+        xpose = pose_vec[0] + x0
+        ypose = pose_vec[1] + y0
+        thetapose = thetak + theta0
+
+        res[1, k] = xpose
+        res[2, k] = ypose
+        res[3, k] = thetapose
+        
+    return res
 
 class trajectoryGenerator(object):
     def __init__(self, N:int, dt:float, max_speed:float) -> None:

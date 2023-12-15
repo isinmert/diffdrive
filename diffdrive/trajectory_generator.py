@@ -9,8 +9,8 @@ from std_srvs.srv import Empty
 from std_msgs.msg import Bool
 from builtin_interfaces.msg import Time
 
-from .traj_gen import trajectoryGenerator
-from tracker_utils import getRotationMatrix
+from .traj_gen import trajectoryGenerator, generateCircTraj
+from .tracker_utils import getRotationMatrix, FloatToTime
 
 import numpy as np
 
@@ -146,30 +146,32 @@ class trajGenNode(Node):
 
         trajectory = Pose2DTrajectory()
         trajectory.header.stamp = self.clock.now().to_msg()
-        
-        s_max = angle_req * rad_req
-        v_max = self.get_parameter('max_speed').value
-        dt = self.get_parameter('dt').value
-        if v_max*dt > s_max:
-            v_max = s_max/dt
-        
-        t_mid = (s_max-(dt*v_max)) / v_max
-        total_traj_time = 2*dt + t_mid
-        rot_matrix = getRotationMatrix(theta_0)
-        t_arr = np.linspace(0, total_traj_time)
-        
-        # TODO: complete this part
-        # First genarate theta array
-        # check if the trajectory direction (CW or CCW)
-        # depending on direction complete trajectory and fill the trajectory 
-        # and call trajectory service to publish 
 
-        raise NotImplementedError
+        try: 
+            traj_arr = generateCircTraj(x0, y0, theta_0, rad_req, angle_req, 
+                                        CW, self.get_parameter("max_speed").value, 
+                                        self.get_parameter("dt").value)
+            
+            for k in range(traj_arr.shape[1]):
+                traj_pose = Pose2DStamped()
+                traj_pose.timestamp = FloatToTime(traj_arr[0, k])
+                traj_pose.pose.x = traj_arr[1, k]
+                traj_pose.pose.y = traj_arr[2, k]
+                traj_pose.pose.theta = traj_arr[3, k]
 
+                trajectory.poses.append(traj_pose)
 
-        response.success = Bool()
-        response.success.data = True
-        return response
+            self.trajectory = trajectory
+            self.trajectory_set = True
+            response.success = Bool()
+            response.success.data = True
+            return response
+        except:
+            self.get_logger().warning("An error occured while generating trajectory.")
+            self.trajectory_set = False
+            response.success = Bool()
+            response.success.data = False
+            return response
     
     def solveProb(self) -> None:
         if self.initial_state_set and self.desired_state_set:
