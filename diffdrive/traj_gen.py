@@ -39,7 +39,7 @@ def generateCircTraj(x0:float, y0:float, theta0:float,
 
     for k in range(theta_arr.size):
 
-        xk = np.sin(theta_arr[k])
+        xk = radius * np.sin(theta_arr[k])
         if not CW:
             yk = radius * (1.0 - np.cos(theta_arr[k]))
             thetak = theta_arr[k]

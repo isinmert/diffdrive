@@ -66,8 +66,8 @@ class TrajectoryTracker(Node):
         self.trajectory_set = False
 
         # Initialize pd controllers
-        self.PD_x = PDController("x_controller", kp=0.2, kd=1.0)
-        self.PD_y = PDController("y_controller", kp=0.2, kd=1.0)
+        self.PD_x = PDController("x_controller", kp=0.5, kd=1.0)
+        self.PD_y = PDController("y_controller", kp=0.5, kd=1.0)
 
         self.prev_cmd_vel = TwistStamped()
 

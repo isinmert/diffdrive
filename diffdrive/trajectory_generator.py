@@ -142,7 +142,7 @@ class trajGenNode(Node):
 
         angle_req = request.angle
         rad_req = request.radius
-        CW = request.cw
+        CW = request.cw.data
 
         trajectory = Pose2DTrajectory()
         trajectory.header.stamp = self.clock.now().to_msg()
