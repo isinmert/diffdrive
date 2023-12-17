@@ -66,8 +66,12 @@ class TrajectoryTracker(Node):
         self.trajectory_set = False
 
         # Initialize pd controllers
-        self.PD_x = PDController("x_controller", kp=0.5, kd=1.0)
-        self.PD_y = PDController("y_controller", kp=0.5, kd=1.0)
+        Kp_x = 0.7
+        Kp_y = 0.7
+        Kd_x = 1.0
+        Kd_y = 1.0
+        self.PD_x = PDController("x_controller", kp=Kp_x, kd=Kd_x)
+        self.PD_y = PDController("y_controller", kp=Kp_y, kd=Kd_y)
 
         self.prev_cmd_vel = TwistStamped()
 
@@ -214,20 +218,23 @@ class TrajectoryTracker(Node):
             if DEBUG: 
                 logger.info(
                     "t:{} is between t0:{} and tf:{}"
-                        .format(t_float, t0_traj, tf_traj)
+                        .format(t_float, t0_traj, tf_traj),
+                        throttle_duration_sec=DEBUG_SEC
                     )
         elif t0_traj > t_float:
             success = True
             if DEBUG:
                 logger.info(
-                    "t:{} is lower than t0:{}".format(t_float, t0_traj)
+                    "t:{} is lower than t0:{}".format(t_float, t0_traj),
+                    throttle_duration_sec=DEBUG_SEC
                 )
             t_float = t0_traj
         else:
             success = True
             if DEBUG:
                 logger.info(
-                    "t:{} is greater than tf:{}".format(t_float, tf_traj)
+                    "t:{} is greater than tf:{}".format(t_float, tf_traj),
+                    throttle_duration_sec=DEBUG_SEC
                 )
             t_float = tf_traj
 
@@ -288,8 +295,8 @@ class TrajectoryTracker(Node):
 
         # check whether the goal is reached
         if (timeToFloat(car_state_time) > self.spline_x.x[-1] 
-            and abs(err_x) <= 1.0e-3
-            and abs(err_y) <= 1.0e-3):
+            and abs(err_x) <= 1.0e-1
+            and abs(err_y) <= 1.0e-1):
             self.cmd_vel_publisher.publish(cmd_vel_msg)
             self.prev_cmd_vel.twist = cmd_vel_msg
             self.prev_cmd_vel.header.stamp = self.clock.now().to_msg()
