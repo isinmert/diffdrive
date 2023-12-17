@@ -2,9 +2,11 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 
+from std_srvs.srv import Trigger
 from geometry_msgs.msg import Twist, TwistStamped
 from builtin_interfaces.msg import Time
 from diffdrive_msgs.msg import Pose2DStamped, Pose2DTrajectory
+from diffdrive_msgs.srv import Pose2DTrajSrv
 from .tracker_utils import (PDController, compareTime, timeDiff, timeToFloat, 
                             getRotationMatrix)
 
@@ -26,11 +28,20 @@ class TrajectoryTracker(Node):
         self.declare_parameter("robot_name", "")
         self.declare_parameter("check_step", 1)
         self.declare_parameter("debug", True)
+        self.declare_parameter("debug_sec", 0.5)
+        self.declare_parameter("safety_threshold", 0.2)
+        self.declare_parameter("cmd_vel_pub_rate", 0.05)
 
-        self.create_subscription(Pose2DTrajectory,
+        # self.create_subscription(Pose2DTrajectory,
+        #     self.get_parameter("robot_name").value+"/trajectory", 
+        #     self.trajectory_callback, 
+        #     qos_profile=1)
+        
+        self.save_traj_srv = self.create_service(
+            Pose2DTrajSrv, 
             self.get_parameter("robot_name").value+"/trajectory", 
-            self.trajectory_callback, 
-            qos_profile=1)
+            self.save_traj_srv_callback
+        )
         
         self.cmd_vel_publisher = self.create_publisher(
             Twist, 
@@ -44,6 +55,9 @@ class TrajectoryTracker(Node):
             self.state_callback, 
             qos_profile=1)
         
+        # save last car state received
+        self.car_state = Pose2DStamped()
+        # save last unique trajectory received
         self.trajectory = Pose2DTrajectory()
         # Initialize splines to store the trajectory
         self.spline_x = None
@@ -52,8 +66,12 @@ class TrajectoryTracker(Node):
         self.trajectory_set = False
 
         # Initialize pd controllers
-        self.PD_x = PDController("x_controller", kp=0.2, kd=1.0)
-        self.PD_y = PDController("y_controller", kp=0.2, kd=1.0)
+        Kp_x = 0.7
+        Kp_y = 0.7
+        Kd_x = 1.0
+        Kd_y = 1.0
+        self.PD_x = PDController("x_controller", kp=Kp_x, kd=Kd_x)
+        self.PD_y = PDController("y_controller", kp=Kp_y, kd=Kd_y)
 
         self.prev_cmd_vel = TwistStamped()
 
@@ -64,8 +82,66 @@ class TrajectoryTracker(Node):
             self.get_parameter("check_step").value, 
             self.timer_callback
             )
+        
+        # create timer to update cmd_vel update
+        self.create_timer(
+            self.get_parameter("cmd_vel_pub_rate").value,
+            self.cmd_vel_pub_callback
+        )
+
+        self.check_trajectory_srv = self.create_service(
+            Trigger,
+            self.get_parameter("robot_name").value + "/check_traj",
+            self.check_traj_callback
+            )
 
         pass
+
+    def save_traj_srv_callback(self, request:Pose2DTrajSrv.Request, 
+                               response:Pose2DTrajSrv.Response):
+        
+        if len(request.trajectory.poses) < 3:
+            response.success.data = False
+            self.get_logger().warning("trajectory should have at least 3 poses.")
+            return response
+        
+        self.trajectory = request.trajectory
+
+        t0 = request.trajectory.header.stamp
+        t0_float = timeToFloat(t0)
+        t_list = []
+        x_list = []
+        y_list = []
+        theta_list = []
+
+        for stamped_pose in request.trajectory.poses:
+            t = stamped_pose.timestamp
+            t_list.append(t0_float + timeToFloat(t))
+            x_list.append(stamped_pose.pose.x)
+            y_list.append(stamped_pose.pose.y)
+            theta_list.append(stamped_pose.pose.theta)
+            
+        self.spline_x = CubicSpline(t_list, x_list)
+        self.spline_y = CubicSpline(t_list, y_list)
+        self.spline_theta = CubicSpline(t_list, theta_list)
+    
+        self.trajectory_set = True
+        self.get_logger().info("trajectory is UPDATED!!")
+
+        response.success.data = True
+        
+        return response
+
+    def check_traj_callback(self, request:Trigger.Request, 
+                            response:Trigger.Response):
+        if self.trajectory_set:
+            response.success = True
+            response.message = ("Trajectory header : {}"
+                                .format(self.trajectory.header.frame_id))
+        else:
+            response.success = False
+            response.message = ("Trajectory is not set.")
+        return response
 
     def trajectory_callback(self, trj_msg:Pose2DTrajectory)->None:
         """
@@ -94,6 +170,7 @@ class TrajectoryTracker(Node):
             self.spline_theta = CubicSpline(t_list, theta_list)
         
             self.trajectory_set = True
+            self.get_logger().info("trajectory is UPDATED!!")
         else:
             pass
         return
@@ -119,12 +196,16 @@ class TrajectoryTracker(Node):
         res = [0.0 for _ in range(6)]
         success = False
         DEBUG = self.get_parameter("debug").value
+        DEBUG_SEC = self.get_parameter("debug_sec").value
         if DEBUG:
             logger = self.get_logger()
         
         if self.trajectory_set:
             pass
         else:
+            if DEBUG:
+                logger.info("Trajectory is not set!!", 
+                            throttle_duration_sec=DEBUG_SEC)
             return success, res
         
         t_float = timeToFloat(t)
@@ -137,20 +218,23 @@ class TrajectoryTracker(Node):
             if DEBUG: 
                 logger.info(
                     "t:{} is between t0:{} and tf:{}"
-                        .format(t_float, t0_traj, tf_traj)
+                        .format(t_float, t0_traj, tf_traj),
+                        throttle_duration_sec=DEBUG_SEC
                     )
         elif t0_traj > t_float:
             success = True
             if DEBUG:
                 logger.info(
-                    "t:{} is lower than t0:{}".format(t_float, t0_traj)
+                    "t:{} is lower than t0:{}".format(t_float, t0_traj),
+                    throttle_duration_sec=DEBUG_SEC
                 )
             t_float = t0_traj
         else:
             success = True
             if DEBUG:
                 logger.info(
-                    "t:{} is greater than tf:{}".format(t_float, tf_traj)
+                    "t:{} is greater than tf:{}".format(t_float, tf_traj),
+                    throttle_duration_sec=DEBUG_SEC
                 )
             t_float = tf_traj
 
@@ -164,23 +248,33 @@ class TrajectoryTracker(Node):
             res[5] = self.spline_y.derivative(2)(t_float)
 
         return success, res
+
     
-    
-    def state_callback(self, msg:Pose2DStamped):
+    def cmd_vel_pub_callback(self):
         cmd_vel_msg = Twist()
-        car_state_time = msg.timestamp
-        car_state_x  = msg.pose.x
-        car_state_y = msg.pose.y
-        car_state_theta = msg.pose.theta
+        car_state_time = self.car_state.timestamp
+        car_state_x  = self.car_state.pose.x
+        car_state_y = self.car_state.pose.y
+        car_state_theta = self.car_state.pose.theta
 
         rot_matrix = getRotationMatrix(car_state_theta)
         DEBUG = self.get_parameter("debug").value
-        DEBUG_SEC = 0.5
+        DEBUG_SEC = self.get_parameter("debug_sec").value
+        SAFETY_THRESHOLD = self.get_parameter("safety_threshold").value
+
+        # check the difference between the current time and last state time
+        cur_time = timeToFloat(self.get_clock().now().to_msg())
+        if abs(cur_time-timeToFloat(car_state_time)) >= SAFETY_THRESHOLD:
+            self.cmd_vel_publisher.publish(cmd_vel_msg)
+            if DEBUG:
+                self.get_logger("State is not observed!!", 
+                                throttle_duration_sec=DEBUG_SEC)
+            return
 
         # Get Pos, vel and acceleration values from trajectory 
         success, state_at_t = self._get_state_from_traj(car_state_time)
         
-        if success:
+        if success == True:
             self.get_logger().info("Trajectory is being tracked",
                                    throttle_duration_sec=DEBUG_SEC)
         else:
@@ -201,12 +295,12 @@ class TrajectoryTracker(Node):
 
         # check whether the goal is reached
         if (timeToFloat(car_state_time) > self.spline_x.x[-1] 
-            and abs(err_x) <= 1.0e-3
-            and abs(err_y) <= 1.0e-3):
+            and abs(err_x) <= 1.0e-1
+            and abs(err_y) <= 1.0e-1):
             self.cmd_vel_publisher.publish(cmd_vel_msg)
             self.prev_cmd_vel.twist = cmd_vel_msg
             self.prev_cmd_vel.header.stamp = self.clock.now().to_msg()
-            self.get_logger().info("Trajectory is successfully followed!",
+            self.get_logger().info("Trajectory is completed!!!",
                                    throttle_duration_sec=DEBUG_SEC)
             self.trajectory_set = False
             self.trajectory = Pose2DTrajectory()
@@ -296,6 +390,19 @@ class TrajectoryTracker(Node):
 
         # Publish message
         self.cmd_vel_publisher.publish(cmd_vel_msg)
+        return
+    
+    
+    def state_callback(self, msg:Pose2DStamped):
+        """
+        Save last observed car state
+        """
+        self.car_state = msg
+        DEBUG = self.get_parameter("debug").value
+        DEBUG_SEC = 0.5
+        if DEBUG:
+            self.get_logger().info("car state is obtained", 
+                                   throttle_duration_sec=DEBUG_SEC)        
         return
 
 def main():

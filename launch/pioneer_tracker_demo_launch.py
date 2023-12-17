@@ -16,8 +16,10 @@ def generate_launch_description():
     robot_description = os.path.join(package_dir, 'resource', 'pioneer.urdf')
 
     debug = LaunchConfiguration('debug')
+    debug_sec = LaunchConfiguration('debug_sec')
 
     debug_launch_argument = DeclareLaunchArgument('debug', default_value='False')
+    debug_sec_launch_argument = DeclareLaunchArgument('debug_sec', default_value='0.5')
 
     webots_node = WebotsLauncher(
         world=os.path.join(package_dir, 'worlds', 'new_world.wbt'), 
@@ -56,7 +58,8 @@ def generate_launch_description():
         parameters=[
             {"robot_name":"My3AT", 
              "use_sim_time":True, 
-             "debug":debug}
+             "debug":debug, 
+             "debug_sec":debug_sec}
         ]
     )
 
@@ -81,7 +84,8 @@ def generate_launch_description():
         )
 
     return LaunchDescription([
-        debug_launch_argument, 
+        debug_launch_argument,
+        debug_sec_launch_argument,
         webots_node,
         ros2_supervisor,
         robot_driver,
