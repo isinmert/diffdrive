@@ -220,6 +220,7 @@ class trajGenNode(Node):
 
                         pose_stamped.pose.x = pxk
                         pose_stamped.pose.y = pyk
+                        pose_stamped.pose.theta = np.arctan2(vyk, vxk)
                         self.trajectory.poses.append(pose_stamped)
 
 
