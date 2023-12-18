@@ -50,7 +50,7 @@ setup(
             'robot_state_publisher = {}.robot_state_publisher:main'.format(package_name),
             'pioneer_driver = {}.pioneer_driver:main'.format(package_name),
             'trajectory_generator = {}.trajectory_generator:main'.format(package_name),
-            'trajectory_tracker = {}.trajectory_tracker:main'.format(package_name), 
+            'feedback_linearize_tracker = {}.feedback_linearize_tracker:main'.format(package_name), 
             'lyapunov_tracker = {}.lyapunov_tracker:main'.format(package_name)
         ],
     },

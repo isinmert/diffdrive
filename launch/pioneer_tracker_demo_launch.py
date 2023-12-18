@@ -54,7 +54,8 @@ def generate_launch_description():
         package="diffdrive", 
         name="trajectory_tracker", 
         namespace="",
-        executable="trajectory_tracker", 
+        # executable="feedback_linearize_tracker", 
+        executable="lyapunov_tracker",
         parameters=[
             {"robot_name":"My3AT", 
              "use_sim_time":True, 
@@ -92,7 +93,7 @@ def generate_launch_description():
         state_publisher,
         trajectory_tracker,
         trajectory_generator, 
-        bag_exec,
+        # bag_exec,
         launch.actions.RegisterEventHandler(
             event_handler=launch.event_handlers.OnProcessExit(
                 target_action=webots_node,
