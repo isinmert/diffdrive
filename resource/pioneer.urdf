@@ -21,6 +21,6 @@
             <!-- <updateRate>40</updateRate> -->
             <alwaysOn>False</alwaysOn>
         </device>
-        <plugin type="gmm_steer.pioneer_driver.PioneerDriver" />
+        <plugin type="diffdrive.pioneer_driver.PioneerDriver" />
     </webots>
 </robot>
