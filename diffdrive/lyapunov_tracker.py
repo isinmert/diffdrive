@@ -18,9 +18,9 @@ class LyapunovTracker(TrajectoryTracker):
         super().__init__("lyapunov_tracker")
 
         # Define tracker specific parameters
-        self.declare_parameter("k_x", 0.5)
-        self.declare_parameter("k_y", 0.5)
-        self.declare_parameter("k_theta", 0.2)
+        self.declare_parameter("k_x", 1.0)
+        self.declare_parameter("k_y", 1.0)
+        self.declare_parameter("k_theta", 1.0)
         return
 
     
@@ -116,7 +116,11 @@ class LyapunovTracker(TrajectoryTracker):
         q_ref_t[0] = state_at_t[0]
         q_ref_t[1] = state_at_t[1]
         vxk_ref, vyk_ref = state_at_t[2], state_at_t[3]
-        thetak_ref = np.arctan2(vyk_ref, vxk_ref)
+        if(timeToFloat(car_state_time) >= self.spline_theta.x[-1]):
+            t_float = self.spline_theta.x[-1]
+        else:
+            t_float = timeToFloat(car_state_time)
+        thetak_ref = self.spline_theta(t_float)
         q_ref_t[2] = thetak_ref
         q_err_t = q_ref_t - q_t
         if DEBUG:
