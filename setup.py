@@ -1,5 +1,20 @@
 from setuptools import setup
 import os
+import glob
+
+def save_folder_to_datafiles(folder_name:str, data_files_:list) -> None:
+    """
+    Save all the files under a given folder name into data files in the correct format.
+    All the files will be copied by preserving the package structure.
+    """
+    for (dir, _, files) in os.walk(folder_name):
+        SAVE_DIR = os.path.join('share', package_name, dir)
+        SAVE_LIST = []
+        for filename in files:
+            if filename != package_name:
+                SAVE_LIST.append(os.path.join(dir, filename))
+        data_files_.append((SAVE_DIR, SAVE_LIST))
+    return 
 
 package_name = 'diffdrive'
 
@@ -31,6 +46,8 @@ data_files.append(
         [os.path.join('resource', 'pioneer.urdf')]
     )
 )
+
+save_folder_to_datafiles('protos', data_files)
 
 setup(
     name=package_name,

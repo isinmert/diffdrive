@@ -54,8 +54,8 @@ def generate_launch_description():
         package="diffdrive", 
         name="trajectory_tracker", 
         namespace="",
-        # executable="feedback_linearize_tracker", 
-        executable="lyapunov_tracker",
+        executable="feedback_linearize_tracker", 
+        # executable="lyapunov_tracker",
         parameters=[
             {"robot_name":"My3AT", 
              "use_sim_time":True, 

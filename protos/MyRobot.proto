@@ -1,0 +1,37 @@
+#VRML_SIM R2023b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/devices/velodyne/protos/VelodynePuck.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/adept/pioneer3/protos/Pioneer3at.proto"
+
+PROTO MyRobot [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "MyRobot"  # Is `Robot.name`.
+  field  SFString    controller      "<extern>" # Is `Robot.controller`.
+  field  MFString    controllerArgs  []         # IS `Robot.controllerArgs`
+  field  SFString    customData      ""         # Is `Robot.customData`
+  field  SFBool      supervisor      FALSE
+  field  SFBool      synchronization TRUE
+]
+{
+    Pioneer3at {
+        translation IS translation
+        rotation IS rotation
+        name IS name
+        controller IS controller
+        controllerArgs IS controllerArgs
+        customData IS customData
+        supervisor IS supervisor
+        synchronization IS synchronization
+        extensionSlot [
+            Compass {
+            }
+            GPS {
+            }
+            VelodynePuck{
+                name "Velodyne Puck"
+                translation 0.1 0.0 0.31
+            }
+        ]
+    }
+}

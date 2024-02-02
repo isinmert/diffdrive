@@ -1,0 +1,244 @@
+#VRML_SIM R2023b utf8
+# license: Apache License 2.0
+# license url: http://www.apache.org/licenses/LICENSE-2.0
+# This is a proto file for Webots for the husky
+# Extracted from: ./urdf/husky.urdf
+
+PROTO husky [
+  field  SFVec3f     translation     0 0 0
+  field  SFRotation  rotation        0 0 1 0
+  field  SFString    name            "husky"  # Is `Robot.name`.
+  field  SFString    controller      "<none>"   # Is `Robot.controller`.
+  field  MFString    controllerArgs  []       # Is `Robot.controllerArgs`.
+  field  SFString    customData      ""       # Is `Robot.customData`.
+  field  SFBool      supervisor      FALSE    # Is `Robot.supervisor`.
+  field  SFBool      synchronization TRUE     # Is `Robot.synchronization`.
+  field  SFBool      selfCollision   FALSE    # Is `Robot.selfCollision`.
+  field  SFBool      staticBase      TRUE     # Defines if the robot base should be pinned to the static environment.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    controllerArgs IS controllerArgs
+    customData IS customData
+    supervisor IS supervisor
+    synchronization IS synchronization
+    selfCollision IS selfCollision
+    children [
+      DEF base_link_visual CadShape {
+        url "./meshes/base_link.dae"
+      }
+      Solid {
+        name "inertial_link"
+        physics Physics {
+          density -1
+          mass 46.034000
+          centerOfMass [ -0.000650 -0.085000 0.062000 ]
+          inertiaMatrix [
+            6.022000e-01 1.738600e+00 2.029600e+00
+            -2.364000e-02 -1.197000e-01 -1.544000e-03
+          ]
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000000
+          anchor 0.256000 0.285400 0.032820
+        }
+        device [
+          RotationalMotor {
+            name "front_left_wheel_joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "front_left_wheel_joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.256000 0.285400 0.032820
+          children [
+            DEF wheel_visual CadShape {
+              url "./meshes/wheel.dae"
+            }
+          ]
+          name "front_left_wheel"
+          boundingObject Pose {
+            rotation 1.000000 0.000000 0.000000 1.570795
+            children [
+              Cylinder {
+                radius 0.1651
+                height 0.1143
+              }
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 2.637000
+            centerOfMass [ 0.000000 0.000000 0.000000 ]
+            inertiaMatrix [
+              2.467000e-02 4.411000e-02 2.467000e-02
+              0.000000e+00 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000000
+          anchor 0.256000 -0.285400 0.032820
+        }
+        device [
+          RotationalMotor {
+            name "front_right_wheel_joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "front_right_wheel_joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation 0.256000 -0.285400 0.032820
+          children [
+            USE wheel_visual
+          ]
+          name "front_right_wheel"
+          boundingObject Pose {
+            rotation 1.000000 0.000000 0.000000 1.570795
+            children [
+              Cylinder {
+                radius 0.1651
+                height 0.1143
+              }
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 2.637000
+            centerOfMass [ 0.000000 0.000000 0.000000 ]
+            inertiaMatrix [
+              2.467000e-02 4.411000e-02 2.467000e-02
+              0.000000e+00 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000000
+          anchor -0.256000 0.285400 0.032820
+        }
+        device [
+          RotationalMotor {
+            name "rear_left_wheel_joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "rear_left_wheel_joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.256000 0.285400 0.032820
+          children [
+            USE wheel_visual
+          ]
+          name "rear_left_wheel"
+          boundingObject Pose {
+            rotation 1.000000 0.000000 0.000000 1.570795
+            children [
+              Cylinder {
+                radius 0.1651
+                height 0.1143
+              }
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 2.637000
+            centerOfMass [ 0.000000 0.000000 0.000000 ]
+            inertiaMatrix [
+              2.467000e-02 4.411000e-02 2.467000e-02
+              0.000000e+00 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      HingeJoint {
+        jointParameters HingeJointParameters {
+          axis 0.000000 1.000000 0.000000
+          anchor -0.256000 -0.285400 0.032820
+        }
+        device [
+          RotationalMotor {
+            name "rear_right_wheel_joint"
+            maxTorque 10000
+          }
+          PositionSensor {
+            name "rear_right_wheel_joint_sensor"
+          }
+        ]
+        endPoint Solid {
+          translation -0.256000 -0.285400 0.032820
+          children [
+            USE wheel_visual
+          ]
+          name "rear_right_wheel"
+          boundingObject Pose {
+            rotation 1.000000 0.000000 0.000000 1.570795
+            children [
+              Cylinder {
+                radius 0.1651
+                height 0.1143
+              }
+            ]
+          }
+          physics Physics {
+            density -1
+            mass 2.637000
+            centerOfMass [ 0.000000 0.000000 0.000000 ]
+            inertiaMatrix [
+              2.467000e-02 4.411000e-02 2.467000e-02
+              0.000000e+00 0.000000e+00 0.000000e+00
+            ]
+          }
+        }
+      }
+      Solid {
+        translation 0.081200 0.000000 0.245000
+        children [
+          DEF top_plate_visual CadShape {
+            url "./meshes/top_plate.dae"
+          }
+        ]
+        name "top_plate_link"
+        boundingObject DEF top_plate Mesh {
+          url "./meshes/top_plate.stl"
+        }
+        physics Physics {
+        }
+      }
+    ]
+    name IS name
+    boundingObject Group {
+      children [
+        Pose {
+          translation 0.000000 0.000000 0.061875
+          children [
+            Box {
+               size 0.987400 0.570900 0.123750
+            }
+          ]
+        }
+        Pose {
+          translation 0.000000 0.000000 0.175625
+          children [
+            Box {
+               size 0.789920 0.570900 0.103750
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
