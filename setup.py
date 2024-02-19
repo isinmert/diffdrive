@@ -69,9 +69,9 @@ setup(
         'console_scripts': [
             'robot_state_publisher = {}.robot_state_publisher:main'.format(package_name),
             'pioneer_driver = {}.pioneer_driver:main'.format(package_name),
-            'trajectory_generator = {}.trajectory_generator:main'.format(package_name),
-            'feedback_linearize_tracker = {}.feedback_linearize_tracker:main'.format(package_name), 
-            'lyapunov_tracker = {}.lyapunov_tracker:main'.format(package_name), 
+            'trajectory_generator = {}.traj_gen_node:main'.format(package_name),
+            'feedback_linearize_tracker = {}.fb_lin_track_node:main'.format(package_name), 
+            'lyapunov_tracker = {}.lyap_track_node:main'.format(package_name), 
             'husky_spawner = {}.husky_spawner:main'.format(package_name)
         ],
     },
