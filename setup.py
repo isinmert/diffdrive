@@ -29,14 +29,16 @@ data_files.append(
 data_files.append(
     (
         os.path.join('share', package_name, 'launch'), 
-        [os.path.join('launch', 'pioneer_tracker_demo_launch.py')]
+        [os.path.join('launch', 'pioneer_tracker_demo_launch.py'),
+         os.path.join('launch', 'husky_launch.py')]
     )
 )
 
 data_files.append(
     (
         os.path.join('share', package_name, 'worlds'),
-        [os.path.join('worlds', 'new_world.wbt')]
+        [os.path.join('worlds', 'new_world.wbt'),
+         os.path.join('worlds', 'gazebo_husky.world')]
     )
 )
 
@@ -47,6 +49,7 @@ data_files.append(
     )
 )
 
+save_folder_to_datafiles('models', data_files)
 save_folder_to_datafiles('protos', data_files)
 
 setup(
@@ -68,7 +71,8 @@ setup(
             'pioneer_driver = {}.pioneer_driver:main'.format(package_name),
             'trajectory_generator = {}.trajectory_generator:main'.format(package_name),
             'feedback_linearize_tracker = {}.feedback_linearize_tracker:main'.format(package_name), 
-            'lyapunov_tracker = {}.lyapunov_tracker:main'.format(package_name)
+            'lyapunov_tracker = {}.lyapunov_tracker:main'.format(package_name), 
+            'husky_spawner = {}.husky_spawner:main'.format(package_name)
         ],
     },
 )
