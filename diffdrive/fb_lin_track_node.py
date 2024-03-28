@@ -48,7 +48,7 @@ class FeedbackLinearizeTracker(TrajectoryTracker):
         if abs(cur_time-timeToFloat(car_state_time)) >= SAFETY_THRESHOLD:
             self.cmd_vel_publisher.publish(cmd_vel_msg)
             if DEBUG:
-                self.get_logger("State is not observed!!", 
+                self.get_logger().info("State is not observed!!", 
                                 throttle_duration_sec=DEBUG_SEC)
             return
 
